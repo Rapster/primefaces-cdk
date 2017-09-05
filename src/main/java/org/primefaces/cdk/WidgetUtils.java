@@ -16,7 +16,7 @@ import com.squareup.javapoet.TypeSpec;
 
 public class WidgetUtils {
 
-	public static void sync(RoundEnvironment roundEnv, TypeSpec.Builder declaration, TypeSpec.Builder impl) {
+	public static void sync(RoundEnvironment roundEnv, TypeSpec.Builder impl) {
 		Optional<? extends Element> optWidgetPropertyKeys = roundEnv.getElementsAnnotatedWith(PFPropertyKeys.class).stream()
 				.filter(elt -> elt.getEnclosingElement().getAnnotation(PFWidget.class) != null).findFirst();
 
@@ -26,7 +26,7 @@ public class WidgetUtils {
 
 		Element widgetPropertyKeys = optWidgetPropertyKeys.get();
 
-		declaration.addSuperinterface(ClassName.get((TypeElement)widgetPropertyKeys.getEnclosingElement()));
+		impl.addSuperinterface(ClassName.get((TypeElement)widgetPropertyKeys.getEnclosingElement()));
 		MethodSpec resolveWidgetVar = MethodSpec.methodBuilder("resolveWidgetVar")
 				.addModifiers(Modifier.PUBLIC)
 				.returns(ClassName.get(String.class))
@@ -34,6 +34,6 @@ public class WidgetUtils {
 				.build();
 		impl.addMethod(resolveWidgetVar);
 
-		PFPropertyUtils.sync(widgetPropertyKeys, declaration, impl);
+		PFPropertyUtils.sync(widgetPropertyKeys, impl);
 	}
 }

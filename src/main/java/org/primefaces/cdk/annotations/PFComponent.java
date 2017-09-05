@@ -17,5 +17,7 @@ public @interface PFComponent {
 
     boolean rtl() default false;
 
+    Class<?> parent();
+
     Class<?> componentHandlerClass() default void.class;
 }

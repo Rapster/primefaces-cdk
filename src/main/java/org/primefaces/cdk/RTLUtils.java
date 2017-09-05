@@ -22,7 +22,7 @@ import com.squareup.javapoet.TypeSpec;
 
 public class RTLUtils {
 
-	public static void sync(RoundEnvironment roundEnv, ProcessingEnvironment processingEnv, Element component, TypeSpec.Builder declaration, TypeSpec.Builder impl) {
+	public static void sync(RoundEnvironment roundEnv, ProcessingEnvironment processingEnv, Element component, TypeSpec.Builder impl) {
 		Optional<? extends Element> optRTLPropertyKeys = roundEnv.getElementsAnnotatedWith(PFPropertyKeys.class).stream()
 				.filter(elt -> elt.getEnclosingElement().getAnnotation(PFRTL.class) != null).findFirst();
 
@@ -31,7 +31,7 @@ public class RTLUtils {
 		}
 
 		Element rtlPropertyKeys = optRTLPropertyKeys.get();
-		declaration.addSuperinterface(ClassName.get((TypeElement)rtlPropertyKeys.getEnclosingElement()));
+		impl.addSuperinterface(ClassName.get((TypeElement)rtlPropertyKeys.getEnclosingElement()));
 
 		MethodSpec isRTL = MethodSpec.methodBuilder("isRTL")
 				.addModifiers(Modifier.PUBLIC)
@@ -53,7 +53,7 @@ public class RTLUtils {
 
 		for (Element element : rtlProperties) {
 			if(!pfproperties.contains(element.getSimpleName())) {
-				PFPropertyUtils.sync(rtlPropertyKeys, element, declaration, impl);
+				PFPropertyUtils.sync(rtlPropertyKeys, element, impl);
 			}
 		}
 	}

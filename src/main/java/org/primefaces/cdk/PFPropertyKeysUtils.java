@@ -19,7 +19,7 @@ import com.squareup.javapoet.TypeSpec;
 
 public class PFPropertyKeysUtils {
 
-	public static void sync(ProcessingEnvironment processingEnv, Element component, TypeSpec.Builder interfaze, TypeSpec.Builder impl) {
+	public static void sync(ProcessingEnvironment processingEnv, Element component, TypeSpec.Builder impl) {
 		Optional<? extends Element> optPropertyKeys = findPFPropertyKeys(component);
 
 		if (!optPropertyKeys.isPresent()) {
@@ -29,7 +29,7 @@ public class PFPropertyKeysUtils {
 		// Write PropertyKeys enum defined in component
 		Element propertyKeys = optPropertyKeys.get();
 		List<Element> pfproperties = PFPropertyUtils.listPFProperties(propertyKeys);
-		PFPropertyUtils.sync(propertyKeys, interfaze, impl);
+		PFPropertyUtils.sync(propertyKeys, impl);
 
 		// Write PFComponent.properties
 		PFPropertyKeys pfcomponent = propertyKeys.getAnnotation(PFPropertyKeys.class);
@@ -40,7 +40,7 @@ public class PFPropertyKeysUtils {
 			List<? extends Element> properties = element.getEnclosedElements().stream()
 					.filter(elt -> elt.getAnnotation(PFProperty.class) != null
 					&& !propertyNames.contains(elt.getSimpleName())).collect(Collectors.toList());
-			properties.stream().forEach(elt -> PFPropertyUtils.sync(element, elt, interfaze, impl));
+			properties.stream().forEach(elt -> PFPropertyUtils.sync(element, elt, impl));
 		}
 	}
 

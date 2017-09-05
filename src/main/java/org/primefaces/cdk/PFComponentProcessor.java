@@ -11,6 +11,7 @@ import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.MirroredTypeException;
 import javax.tools.Diagnostic;
 
 import org.primefaces.cdk.annotations.PFComponent;
@@ -20,6 +21,7 @@ import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.FieldSpec;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
+import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
 
 @SupportedAnnotationTypes("org.primefaces.cdk.annotations.PFComponent")
@@ -35,16 +37,18 @@ public class PFComponentProcessor extends AbstractProcessor {
 
 		System.out.println("Starting processing...");
 		for (Element component : annotatedElements) {
-			System.out.println(component.getSimpleName());
+			System.out.println("Creating " + component.getSimpleName() + "...");
+			PFComponent definition = component.getAnnotation(PFComponent.class);
 
-			// Interface
-			TypeSpec.Builder interfaze = TypeSpec.interfaceBuilder("I" + component.getSimpleName().toString().replaceAll("Core", ""))
-					.addModifiers(Modifier.PUBLIC);
+			TypeName parent = Try.catchExceptions(MirroredTypeException.class)
+					.tryThis(() -> TypeName.class.cast(definition.parent()))
+					.recover(e -> ClassName.get(e.getTypeMirror()))
+					.get();
 
 			// Implementation
-			TypeSpec.Builder impl = TypeSpec.classBuilder(component.getSimpleName().toString().replace("Core", ""))
-					.addModifiers(Modifier.PUBLIC)
-					.superclass(ClassName.get(processingEnv.getElementUtils().getPackageOf(component).toString(), component.getSimpleName().toString()));
+			TypeSpec.Builder impl = TypeSpec.classBuilder("Abstract" + component.getSimpleName().toString())
+					.addModifiers(Modifier.PUBLIC, Modifier.ABSTRACT)
+					.superclass(parent);
 
 			FieldSpec componentType = FieldSpec.builder(ClassName.get(String.class), "COMPONENT_TYPE", Modifier.PUBLIC, Modifier.STATIC, Modifier.FINAL)
 					.initializer("$S", getComponentType(component))
@@ -74,25 +78,15 @@ public class PFComponentProcessor extends AbstractProcessor {
 					.build();
 			impl.addMethod(getFamily);
 
-			PFComponent definition = component.getAnnotation(PFComponent.class);
 			if (definition.widget()) {
-				WidgetUtils.sync(roundEnv, interfaze, impl);
+				WidgetUtils.sync(roundEnv, impl);
 			}
 
 			if (definition.rtl()) {
-				RTLUtils.sync(roundEnv, processingEnv, component, interfaze, impl);
+				RTLUtils.sync(roundEnv, processingEnv, component, impl);
 			}
 
-			PFPropertyKeysUtils.sync(processingEnv, component, interfaze, impl);
-
-			// Interface
-			JavaFile interfaceFile = JavaFile
-					.builder(processingEnv.getElementUtils().getPackageOf(component).toString(), interfaze.build())
-					.build();
-
-			Try.catchExceptions(IOException.class)
-					.run(() -> interfaceFile.writeTo(processingEnv.getFiler()))
-					.onFail(e-> processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, e.getMessage()));
+			PFPropertyKeysUtils.sync(processingEnv, component, impl);
 
 			// Implementation
 			JavaFile componentFile = JavaFile
@@ -102,6 +96,8 @@ public class PFComponentProcessor extends AbstractProcessor {
 			Try.catchExceptions(IOException.class)
 					.run(() -> componentFile.writeTo(processingEnv.getFiler()))
 					.onFail(e-> processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, e.getMessage()));
+
+			System.out.println("Creating " + component.getSimpleName() + " is done");
 		}
 		return true;
 	}
